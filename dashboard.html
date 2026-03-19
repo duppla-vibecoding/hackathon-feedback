@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Resultados - Hackathon Duppla 2026</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script>
     tailwind.config = {
@@ -152,7 +151,6 @@
   <script>
     const SUPABASE_URL = 'https://nekswrhqiqzsqlwbsups.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5la3N3cmhxaXF6c3Fsd2JzdXBzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE4MDA1ODMsImV4cCI6MjA1NzM3NjU4M30.1L7hhpE_VHLO4dkyoLaza7JOiMpMsqZYIeGMLqCCIps';
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let chartInstances = {};
 
@@ -219,16 +217,25 @@
     }
 
     async function loadData() {
-      const { data, error } = await sb.from('hackathon_feedback').select('*').order('created_at', { ascending: false });
-
-      document.getElementById('loading').classList.add('hidden');
-
-      if (error) {
-        console.error(error);
+      let data;
+      try {
+        const res = await fetch(SUPABASE_URL + '/rest/v1/hackathon_feedback?select=*&order=created_at.desc', {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+          }
+        });
+        if (!res.ok) throw new Error((await res.json()).message);
+        data = await res.json();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loading').classList.add('hidden');
         document.getElementById('no-data').classList.remove('hidden');
-        document.getElementById('no-data').querySelector('p').textContent = 'Error cargando datos: ' + error.message;
+        document.getElementById('no-data').querySelector('p').textContent = 'Error cargando datos: ' + err.message;
         return;
       }
+
+      document.getElementById('loading').classList.add('hidden');
 
       if (!data || data.length === 0) {
         document.getElementById('no-data').classList.remove('hidden');

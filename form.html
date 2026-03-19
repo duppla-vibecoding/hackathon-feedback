@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Feedback - Hackathon Duppla 2026</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -204,7 +203,6 @@
   <script>
     const SUPABASE_URL = 'https://nekswrhqiqzsqlwbsups.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5la3N3cmhxaXF6c3Fsd2JzdXBzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE4MDA1ODMsImV4cCI6MjA1NzM3NjU4M30.1L7hhpE_VHLO4dkyoLaza7JOiMpMsqZYIeGMLqCCIps';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     document.getElementById('feedback-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -225,7 +223,7 @@
         return;
       }
 
-      const data = {
+      const payload = {
         nombre: document.getElementById('nombre').value.trim() || null,
         equipo: equipoEl.value,
         satisfaccion_general: val('satisfaccion'),
@@ -236,8 +234,21 @@
       };
 
       try {
-        const { error } = await supabase.from('hackathon_feedback').insert([data]);
-        if (error) throw error;
+        const res = await fetch(SUPABASE_URL + '/rest/v1/hackathon_feedback', {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || 'Error al guardar');
+        }
 
         document.getElementById('form-container').classList.add('hidden');
         document.getElementById('success-container').classList.remove('hidden');
