@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resultados - Hackathon Duppla 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            duppla: { 50: '#f0f5ff', 100: '#e0eaff', 200: '#c2d5ff', 500: '#4f6df5', 600: '#3b56d4', 700: '#2d44b0', 800: '#1e2f7a', 900: '#141f52' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .metric-card { transition: transform 0.2s; }
+    .metric-card:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-duppla-700 to-duppla-500 text-white py-6 px-4">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">Resultados Hackathon Duppla</h1>
+        <p class="text-duppla-200 text-sm mt-1">Dashboard de feedback — Marzo 2026</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="last-update" class="text-xs text-duppla-200"></span>
+        <button onclick="loadData()" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition">
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading" class="max-w-6xl mx-auto px-4 py-20 text-center">
+    <div class="inline-block w-8 h-8 border-4 border-duppla-200 border-t-duppla-600 rounded-full animate-spin"></div>
+    <p class="text-gray-500 mt-4">Cargando datos...</p>
+  </div>
+
+  <!-- No data -->
+  <div id="no-data" class="hidden max-w-6xl mx-auto px-4 py-20 text-center">
+    <p class="text-gray-400 text-lg">Aun no hay respuestas. Comparte el formulario con tu equipo!</p>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" class="hidden max-w-6xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Metric cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 fade-in">
+      <div class="metric-card bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div class="text-sm text-gray-500 mb-1">Respuestas</div>
+        <div id="m-total" class="text-3xl font-bold text-gray-800">-</div>
+        <div class="text-xs text-gray-400 mt-1">de ~30 personas</div>
+      </div>
+      <div class="metric-card bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div class="text-sm text-gray-500 mb-1">Satisfaccion</div>
+        <div id="m-satisfaccion" class="text-3xl font-bold text-gray-800">-</div>
+        <div class="text-xs text-gray-400 mt-1">promedio de 5</div>
+      </div>
+      <div class="metric-card bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div class="text-sm text-gray-500 mb-1">Organizacion</div>
+        <div id="m-organizacion" class="text-3xl font-bold text-gray-800">-</div>
+        <div class="text-xs text-gray-400 mt-1">promedio de 5</div>
+      </div>
+      <div class="metric-card bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div class="text-sm text-gray-500 mb-1">Ejecucion</div>
+        <div id="m-ejecucion" class="text-3xl font-bold text-gray-800">-</div>
+        <div class="text-xs text-gray-400 mt-1">promedio de 5</div>
+      </div>
+      <div class="metric-card bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div class="text-sm text-gray-500 mb-1">Aprendizaje</div>
+        <div id="m-aprendizaje" class="text-3xl font-bold text-gray-800">-</div>
+        <div class="text-xs text-gray-400 mt-1">promedio de 5</div>
+      </div>
+    </div>
+
+    <!-- Charts row 1: ratings -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-800 mb-3">Satisfaccion general</h3>
+        <canvas id="chart-satisfaccion" height="200"></canvas>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-800 mb-3">Organizacion</h3>
+        <canvas id="chart-organizacion" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-800 mb-3">Ejecucion</h3>
+        <canvas id="chart-ejecucion" height="200"></canvas>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-800 mb-3">Aprendizaje</h3>
+        <canvas id="chart-aprendizaje" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Charts row 2: comparativo + equipos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-800 mb-3">Comparativo de ratings</h3>
+        <canvas id="chart-comparativo" height="220"></canvas>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-800 mb-3">Respuestas por equipo</h3>
+        <canvas id="chart-equipos" height="220"></canvas>
+      </div>
+    </div>
+
+    <!-- Promedios por equipo -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-800 mb-4">Promedios por equipo</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="text-left py-2 pr-4 font-medium text-gray-500">Equipo</th>
+              <th class="text-center py-2 px-3 font-medium text-gray-500">Satisfaccion</th>
+              <th class="text-center py-2 px-3 font-medium text-gray-500">Organizacion</th>
+              <th class="text-center py-2 px-3 font-medium text-gray-500">Ejecucion</th>
+              <th class="text-center py-2 px-3 font-medium text-gray-500">Aprendizaje</th>
+              <th class="text-center py-2 px-3 font-medium text-gray-500">Respuestas</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-equipos"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Comentarios -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-800 mb-3">Comentarios adicionales</h3>
+      <div id="feedback-comentarios" class="space-y-2 max-h-96 overflow-y-auto"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://nekswrhqiqzsqlwbsups.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5la3N3cmhxaXF6c3Fsd2JzdXBzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE4MDA1ODMsImV4cCI6MjA1NzM3NjU4M30.1L7hhpE_VHLO4dkyoLaza7JOiMpMsqZYIeGMLqCCIps';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let chartInstances = {};
+
+    function destroyCharts() {
+      Object.values(chartInstances).forEach(c => c.destroy());
+      chartInstances = {};
+    }
+
+    function avg(arr) {
+      const valid = arr.filter(v => v != null);
+      return valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length) : 0;
+    }
+
+    function ratingColor(val) {
+      if (val >= 4.5) return 'text-green-600';
+      if (val >= 3.5) return 'text-blue-600';
+      if (val >= 2.5) return 'text-yellow-600';
+      return 'text-red-600';
+    }
+
+    function countValues(arr, possible) {
+      const counts = {};
+      possible.forEach(v => counts[v] = 0);
+      arr.filter(v => v != null).forEach(v => counts[v] = (counts[v] || 0) + 1);
+      return possible.map(v => counts[v]);
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function feedbackCard(text, equipo, nombre) {
+      const badge = equipo ? `<span class="inline-block bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">${escapeHtml(equipo)}</span>` : '';
+      const name = nombre ? `<span class="text-xs text-gray-400 ml-2">— ${escapeHtml(nombre)}</span>` : '';
+      return `<div class="bg-gray-50 rounded-lg px-4 py-3 text-sm text-gray-700">
+        <p>${escapeHtml(text)}</p>
+        <div class="mt-2">${badge}${name}</div>
+      </div>`;
+    }
+
+    function ratingBarChart(canvasId, values, label) {
+      return new Chart(document.getElementById(canvasId), {
+        type: 'bar',
+        data: {
+          labels: ['1', '2', '3', '4', '5'],
+          datasets: [{
+            data: countValues(values, [1, 2, 3, 4, 5]),
+            backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'],
+            borderRadius: 6,
+            maxBarThickness: 50
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    async function loadData() {
+      const { data, error } = await sb.from('hackathon_feedback').select('*').order('created_at', { ascending: false });
+
+      document.getElementById('loading').classList.add('hidden');
+
+      if (error) {
+        console.error(error);
+        document.getElementById('no-data').classList.remove('hidden');
+        document.getElementById('no-data').querySelector('p').textContent = 'Error cargando datos: ' + error.message;
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        document.getElementById('no-data').classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('dashboard').classList.remove('hidden');
+      document.getElementById('no-data').classList.add('hidden');
+      document.getElementById('last-update').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CO');
+
+      // Metrics
+      document.getElementById('m-total').textContent = data.length;
+
+      const metrics = [
+        { id: 'm-satisfaccion', field: 'satisfaccion_general' },
+        { id: 'm-organizacion', field: 'rating_organizacion' },
+        { id: 'm-ejecucion', field: 'rating_ejecucion' },
+        { id: 'm-aprendizaje', field: 'rating_aprendizaje' },
+      ];
+
+      metrics.forEach(({ id, field }) => {
+        const val = avg(data.map(d => d[field]));
+        const el = document.getElementById(id);
+        el.textContent = val.toFixed(1);
+        el.className = `text-3xl font-bold ${ratingColor(val)}`;
+      });
+
+      // Charts
+      destroyCharts();
+
+      chartInstances.sat = ratingBarChart('chart-satisfaccion', data.map(d => d.satisfaccion_general));
+      chartInstances.org = ratingBarChart('chart-organizacion', data.map(d => d.rating_organizacion));
+      chartInstances.eje = ratingBarChart('chart-ejecucion', data.map(d => d.rating_ejecucion));
+      chartInstances.apr = ratingBarChart('chart-aprendizaje', data.map(d => d.rating_aprendizaje));
+
+      // Comparativo radar/bar
+      const avgSat = avg(data.map(d => d.satisfaccion_general));
+      const avgOrg = avg(data.map(d => d.rating_organizacion));
+      const avgEje = avg(data.map(d => d.rating_ejecucion));
+      const avgApr = avg(data.map(d => d.rating_aprendizaje));
+
+      chartInstances.comp = new Chart(document.getElementById('chart-comparativo'), {
+        type: 'radar',
+        data: {
+          labels: ['Satisfaccion', 'Organizacion', 'Ejecucion', 'Aprendizaje'],
+          datasets: [{
+            label: 'Promedio general',
+            data: [avgSat, avgOrg, avgEje, avgApr],
+            backgroundColor: 'rgba(79, 109, 245, 0.15)',
+            borderColor: '#4f6df5',
+            borderWidth: 2,
+            pointBackgroundColor: '#4f6df5',
+            pointRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            r: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // Equipos doughnut
+      const equipoColors = { 'Equipo A': '#4f6df5', 'Equipo B': '#f59e0b', 'Equipo Virtual': '#10b981' };
+      const equipoCounts = {};
+      data.forEach(d => {
+        if (d.equipo) equipoCounts[d.equipo] = (equipoCounts[d.equipo] || 0) + 1;
+      });
+
+      chartInstances.equipos = new Chart(document.getElementById('chart-equipos'), {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(equipoCounts),
+          datasets: [{
+            data: Object.values(equipoCounts),
+            backgroundColor: Object.keys(equipoCounts).map(k => equipoColors[k] || '#6b7280'),
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true } } }
+        }
+      });
+
+      // Tabla promedios por equipo
+      const equipos = ['Equipo A', 'Equipo B', 'Equipo Virtual'];
+      const tablaEl = document.getElementById('tabla-equipos');
+      tablaEl.innerHTML = equipos.map(eq => {
+        const eqData = data.filter(d => d.equipo === eq);
+        if (eqData.length === 0) return '';
+        const s = avg(eqData.map(d => d.satisfaccion_general)).toFixed(1);
+        const o = avg(eqData.map(d => d.rating_organizacion)).toFixed(1);
+        const e = avg(eqData.map(d => d.rating_ejecucion)).toFixed(1);
+        const a = avg(eqData.map(d => d.rating_aprendizaje)).toFixed(1);
+        const color = equipoColors[eq];
+        return `<tr class="border-b border-gray-100">
+          <td class="py-3 pr-4 font-medium" style="color:${color}">${eq}</td>
+          <td class="text-center py-3 px-3">${s}</td>
+          <td class="text-center py-3 px-3">${o}</td>
+          <td class="text-center py-3 px-3">${e}</td>
+          <td class="text-center py-3 px-3">${a}</td>
+          <td class="text-center py-3 px-3 text-gray-400">${eqData.length}</td>
+        </tr>`;
+      }).join('');
+
+      // Comentarios
+      const comentariosEl = document.getElementById('feedback-comentarios');
+      const comentarios = data.filter(d => d.comentarios_adicionales);
+      comentariosEl.innerHTML = comentarios.length
+        ? comentarios.map(d => feedbackCard(d.comentarios_adicionales, d.equipo, d.nombre)).join('')
+        : '<p class="text-sm text-gray-400">Sin comentarios aun</p>';
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
