@@ -301,7 +301,7 @@
       });
 
       // Equipos doughnut
-      const equipoColors = { 'Equipo A': '#4f6df5', 'Equipo B': '#f59e0b', 'Equipo Virtual': '#10b981' };
+      const equipoColors = { 'Principiantes': '#4f6df5', 'Avanzados': '#f59e0b', 'Equipo Virtual': '#10b981' };
       const equipoCounts = {};
       data.forEach(d => {
         if (d.equipo) equipoCounts[d.equipo] = (equipoCounts[d.equipo] || 0) + 1;
@@ -324,7 +324,7 @@
       });
 
       // Tabla promedios por equipo
-      const equipos = ['Equipo A', 'Equipo B', 'Equipo Virtual'];
+      const equipos = ['Principiantes', 'Avanzados', 'Equipo Virtual'];
       const tablaEl = document.getElementById('tabla-equipos');
       tablaEl.innerHTML = equipos.map(eq => {
         const eqData = data.filter(d => d.equipo === eq);

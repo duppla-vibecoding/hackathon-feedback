@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS hackathon_feedback (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   nombre TEXT,
-  equipo TEXT CHECK (equipo IN ('Equipo A', 'Equipo B', 'Equipo Virtual')),
+  equipo TEXT CHECK (equipo IN ('Principiantes', 'Avanzados', 'Equipo Virtual')),
   satisfaccion_general INTEGER CHECK (satisfaccion_general BETWEEN 1 AND 5),
   rating_organizacion INTEGER CHECK (rating_organizacion BETWEEN 1 AND 5),
   rating_ejecucion INTEGER CHECK (rating_ejecucion BETWEEN 1 AND 5),
